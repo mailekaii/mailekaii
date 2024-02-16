@@ -1,2 +1,5 @@
-Testing final project 
-I can add sth
+please use R 
+###########
+covid_past <- ("csv")
+covid_current <- ("csv")
+
