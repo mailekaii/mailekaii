@@ -3,7 +3,7 @@ please use R
 library(dplyr)
 library("stringr")
 
-covid_past_df <- ("csv1")
+covid_past_df <- read.csv("us_past_total.csv") Link to data set: https://docs.google.com/spreadsheets/d/1batJMsG2oZL3ti-9vNbn2aHqlv6w-xYA4_upnsH-x3A/edit#gid=0
 covid_current_df <- ("csv2")
 
 combined_df = left_join(food_df, state_name_abv_df, by = c("state.name" = "State.Name"))
