@@ -16,4 +16,4 @@ covid_in_march <- summarization_df %>% filter(date == "3/12" & past_new_cases ==
 combined_df <- combined_df %>%
   mutate(total_cases_category = ifelse(past_total_cases >= threshold | current_total_cases >= threshold, "Above Threshold", "Below Threshold"))
 combined_df <- combined_df %>%
-  mutate(total_new_cases = past_new_cases + current_new_cases)
+  mutate(cumulative_deaths = past_total_deaths + current_total_death)
