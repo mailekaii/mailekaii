@@ -17,9 +17,5 @@ summarization_df <- summarization_df %>%
   mutate(cumulative_deaths = ifelse(is.na(past_total_deaths), 0, past_total_deaths) + 
            ifelse(is.na(current_total_death), 0, current_total_death))
 
-combined_df <- combined_df %>%
-  mutate(total_cases_category = cut(past_total_cases + current_total_cases,
-                                    breaks = quantile(past_total_cases + current_total_cases, probs = c(0, 0.25, 0.5, 0.75, 1)),
-                                    labels = c("Very Low", "Low", "Medium", "High"),
-                                    include.lowest = TRUE))
+
 
