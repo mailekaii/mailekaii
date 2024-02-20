@@ -9,8 +9,8 @@ covid_current_df <- ("us_current_total.csv")
 library(dplyr)
 covid_past_df = read.csv("us_past_total.csv")
 covid_current_df = read.csv("us_current.csv")
-combined_df <- full_join(covid_past_df, covid_current_df, by = c("date", "Location"))
-combined_df <- combined_df %>%
+summarization_df <- full_join(covid_past_df, covid_current_df, by = c("date", "Location"))
+summarization_df <- summarization_df %>%
   select(date, Location, past_total_cases, past_new_cases, past_total_deaths, past_new_deaths, past_icu, past_hosp, current_total_cases, current_total_death, current_new_death, current_icu, current_hosp)
 covid_in_march <- summarization_df %>% filter(date == "3/12" & past_new_cases == "amount of covid throught the years in march") 
 combined_df <- combined_df %>%
