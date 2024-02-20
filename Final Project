@@ -6,5 +6,9 @@ library("stringr")
 covid_past_df <- read.csv("us_past_total.csv") Link to data set: https://docs.google.com/spreadsheets/d/1batJMsG2oZL3ti-9vNbn2aHqlv6w-xYA4_upnsH-x3A/edit#gid=0
 covid_current_df <- ("us_current_total.csv")
 
-combined_df = left_join(food_df, state_name_abv_df, by = c("state.name" = "State.Name"))
-combined_df = left_join(combined_df, county_df, by = c("County" = "County_name", "State.Code" = "State"))
+library(dplyr)
+covid_past_df = read.csv("us_past_total.csv")
+covid_current_df = read.csv("us_current.csv")
+combined_df <- full_join(covid_past_df, covid_current_df, by = c("date", "Location"))
+combined_df <- combined_df %>%
+  select(date, Location, past_total_cases, past_new_cases, past_total_deaths, past_new_deaths, past_icu, past_hosp, current_total_cases, current_total_death, current_new_death, current_icu, current_hosp)
