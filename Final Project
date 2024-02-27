@@ -27,10 +27,24 @@ summarization_df <- summarization_df %>%
 The Website coding 
 ## OVERVIEW TAB INFO
 
-overview_tab <- tabPanel("Covid 19",
-   h1("Our Covid 19 Final Project"),
-   p("The recent data of covid-19 and how you might have possibly had covid-19")
-)
+overview_tab <- tabPanel("COVID",
+   h1("What is COVID?"),
+   p("COVID is an infectious disease that comes from SARS-CoV-2. "),
+   h3("What are the symptoms of COVID?"),
+   p("Coughing, Fever, Runny nose, Body Aches, Sore Throat, Chills"),
+   h3("How is COVID transmitted?"),
+  p("COVID can be transmitted by an infectious individaul breathing, sneezing, or coughing out droplets containing the virus."
+    ),
+  h3("What is our purpose?"),
+  p("Our proposal is an informational website that can help save people time and money. Within the website the information we provide can assist in determining the type of illness a person may be experiencing through the information that is being obtained.The development through our website has multiple benefits to our community. The medical field can also benefit from the information that we gather. The power of the data we obtain through our website can help innovate, and protect the community from COVID to live a healthier future.   
+"),
+  h3(" Data Sources we used:"),
+  p(" A majority of the data we pulled was COVID in the United States only. Throughout our data we organized the amount of total deaths, total cases, and the hospital rates from COVID."),
+  p("https://ourworldindata.org/covid-cases
+"),
+  p("https://kingcounty.gov/en/legacy/depts/health/covid-19/data/vaccination.aspx
+"))
+
 
 ## VIZ 1 TAB INFO
 
@@ -98,7 +112,7 @@ conclusion_tab <- tabPanel("Conclusion Tab Title",
 
 
 
-ui <- navbarPage("Example Project Title",
+ui <- navbarPage("How did COVID affect the USA?",
   overview_tab,
   viz_1_tab,
   viz_2_tab,
