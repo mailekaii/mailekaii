@@ -1,0 +1,55 @@
+#Graph 3: Total Hospitalizations 
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(plotly)
+
+combined_df = read.csv("Covid_summary.csv")
+past_total_hosp_df2 = combined_df %>% select(date, past_icu, past_hosp)
+past_total_hosp_df = past_total_hosp_df2 %>% filter(!is.na(past_icu), !is.na(past_hosp))
+
+
+past_total_hosp_df$date = as.Date(past_total_hosp_df$date, format = "%m/%d/%Y")
+past_total_hosp_df = past_total_hosp_df %>%mutate(year = format(date, "%Y"))
+total_past_hosp = past_total_hosp_df %>%group_by(year) %>% summarise(max_past_hosp = max(past_hosp))
+total_past_icu = past_total_hosp_df %>% group_by(year) %>% summarise(max_past_icu = max(past_icu))
+combined_past_hosp_stats = full_join(total_past_icu, total_past_hosp, by = "year")
+
+current_total_hosp_df2 = combined_df %>% select(date, current_icu, current_hosp)
+current_total_hosp_df = current_total_hosp_df2 %>% filter (!is.na(current_icu), !is.na(current_hosp))
+
+current_total_hosp_df$date = as.Date(current_total_hosp_df$date, format = "%m/%d/%Y")
+current_total_hosp_df = current_total_hosp_df %>% mutate(year = format(date, "%Y"))
+total_current_hosp = current_total_hosp_df %>% group_by(year) %>% summarise(max_current_hosp = max(current_hosp))
+total_current_icu = current_total_hosp_df %>% group_by(year) %>% summarise(max_current_icu = max(current_icu))                                                                         
+combined_current_hosp_stats = full_join(total_current_icu, total_current_hosp, by = "year") 
+
+combined_hosp_stats = full_join(combined_past_hosp_stats, combined_current_hosp_stats, by = "year")
+
+
+interactive_bar_chart3 = plot_ly(total_past_hosp, x = ~year, y = ~max_past_hosp, type = "bar", 
+            marker = list(color = "blue"),
+            name = "Past Hospitalizations") %>%
+  layout(title = "Most Hospitalizations by Year",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Most Hospitalizations"))
+interactive_bar_chart3 = interactive_bar_chart3 %>%
+  add_trace(data = total_current_hosp, x = ~year, y = ~max_current_hosp, type = "bar",
+            marker = list(color = "black"),
+            name = "Current Hospitalizations") 
+interactive_bar_chart3 = interactive_bar_chart3 %>%
+  add_trace(data = total_past_icu, x = ~year, y = ~max_past_icu, type = "bar",
+            marker = list(color = "green"),
+            name = "Past ICU Admissions") 
+interactive_bar_chart3 = interactive_bar_chart3 %>%
+  add_trace(data = total_current_icu, x = ~year, y = ~max_current_icu, type = "bar",
+            marker = list(color = "red"),
+            name = "Current ICU Admissions") 
+interactive_bar_chart3
+
+
+#Scattar plot code if we do not want to use a third bar graph
+scatter_plot <- ggplot(combined_current_hosp_stats, aes(x = max_past_hosp, y = max_past_icu)) +
+  geom_point(color = "blue") +
+  labs(x = "Max Past Hospitalizations", y = "Max Past ICU Admissions", title = "Hospitalizations vs ICU Admissions")
+scatter_plot
