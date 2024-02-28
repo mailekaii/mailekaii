@@ -1,0 +1,44 @@
+#graph 2: Total infected
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(plotly)
+combined_df = read.csv("Covid_summary.csv")
+past_total_cases_df2 = combined_df %>% select(date, past_total_cases)
+past_total_cases_df = past_total_cases_df2[!is.na(past_total_cases_df2$past_total_cases), ]
+
+past_total_cases_df$date = as.Date(past_total_cases_df$date, format = "%m/%d/%Y")
+past_total_cases_df = past_total_cases_df %>%mutate(year = format(date, "%Y"))
+total_past_cases = past_total_cases_df %>%group_by(year) %>% summarise(max_past_cases = max(past_total_cases))
+
+current_total_cases_df2 = combined_df %>% select(date, current_total_cases)
+current_total_cases_df = current_total_cases_df2[!is.na(current_total_cases_df2$current_total_cases),]
+
+current_total_cases_df$date = as.Date(current_total_cases_df$date, format = "%m/%d/%Y")
+current_total_cases_df = current_total_cases_df %>% mutate(year = format(date, "%Y"))
+total_current_cases = current_total_cases_df %>% group_by(year) %>% summarise(max_current_cases = max(current_total_cases))
+
+interactive_bar_chart2 = plot_ly(total_past_cases, x = ~year, y = ~max_past_cases, type = "bar", 
+            marker = list(color = "gold"),
+            name = "Past Cases") %>%
+  layout(title = "Most Cases by Year",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Most Cases"))
+interactive_bar_chart2 = interactive_bar_chart2 %>%
+  add_trace(data = total_current_cases, x = ~year, y = ~max_current_cases, type = "bar",
+            marker = list(color = "purple"),
+            name = "Current Cases") 
+interactive_bar_chart2
+
+#code for line chart if we dont want to use another bar graph
+interactive_line_chart= plot_ly(total_past_cases, x = ~year, y = ~max_past_cases, type = "scatter", mode = "lines+markers",
+                                  line = list(color = "green"),
+                                  name = "Past Cases") %>%
+  layout(title = "Most Cases by Year",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Most Cases"))
+interactive_line_chart = interactive_line_chart %>%
+  add_trace(data = total_current_cases, x = ~year, y = ~max_current_cases, type = "scatter", mode = "lines+markers",
+            line = list(color = "purple"),
+            name = "Current Cases")
+interactive_line_chart
