@@ -9,7 +9,10 @@ ui <- fluidPage(
   titlePanel("COVID-19 Deaths by Year"),
   sidebarLayout(
     sidebarPanel(
-      # Additional inputs can be added here
+      # Adding checkboxes for year selection
+      checkboxGroupInput("selectedYears", "Select Years:",
+                         choices = c("2020", "2021", "2022", "2023", "2024"),
+                         selected = c("2020", "2021", "2022", "2023", "2024")),
       p("Interactive bar chart showing the most deaths by year.")
     ),
     mainPanel(
@@ -22,33 +25,30 @@ ui <- fluidPage(
 # Define server logic
 server <- function(input, output) {
   output$covidDeathsPlot <- renderPlotly({
-    # Assuming 'Covid_summary.csv' is available in the working directory
     combined_df <- read.csv("Covid_summary.csv")
     
-    # Your provided data manipulation and plotting code
-    past_deaths_df <- combined_df %>% select(date, past_total_deaths)
-    current_deaths_df <- combined_df %>% select(date, current_total_death)
+    # Data manipulation
+    combined_df$date <- as.Date(combined_df$date, format = "%m/%d/%Y")
+    combined_df <- combined_df %>% mutate(year = format(date, "%Y"))
+    combined_df <- combined_df %>%
+      select(year, past_total_deaths, current_total_death) %>%
+      filter(year %in% input$selectedYears)
     
-    current_total_deaths_df <- current_deaths_df[!is.na(current_deaths_df$current_total_death), ]
-    past_total_deaths_df <- past_deaths_df[!is.na(past_deaths_df$past_total_deaths), ]
+    past_total_deaths_df <- combined_df %>% select(year, past_total_deaths) %>%
+      group_by(year) %>% summarise(max_deaths = max(past_total_deaths, na.rm = TRUE))
     
-    past_total_deaths_df$date <- as.Date(past_total_deaths_df$date, format = "%m/%d/%Y")
-    past_total_deaths_df <- past_total_deaths_df %>% mutate(year = format(date, "%Y"))
-    max_deaths_by_year_df <- past_total_deaths_df %>% group_by(year) %>% summarise(max_deaths = max(past_total_deaths))
-    
-    current_total_deaths_df$date <- as.Date(current_total_deaths_df$date, format = "%m/%d/%Y")
-    current_total_deaths_df <- current_total_deaths_df %>% mutate(year = format(date,"%Y"))
-    max_deaths_by_year_df2 <- current_total_deaths_df %>% group_by(year) %>% summarise(max_deaths = max(current_total_death))
+    current_total_deaths_df <- combined_df %>% select(year, current_total_death) %>%
+      group_by(year) %>% summarise(max_deaths = max(current_total_death, na.rm = TRUE))
     
     # Plot
-    interactive_bar_chart <- plot_ly(max_deaths_by_year_df, x = ~year, y = ~max_deaths, type = "bar", 
+    interactive_bar_chart <- plot_ly(past_total_deaths_df, x = ~year, y = ~max_deaths, type = "bar", 
                                      marker = list(color = "blue"),
                                      name = "Past Deaths") %>%
-      layout(title = "Most Deaths by Year",
+      layout(title = "Most Deaths by Selected Years",
              xaxis = list(title = "Year"),
              yaxis = list(title = "Most Deaths"))
     interactive_bar_chart <- interactive_bar_chart %>%
-      add_trace(data = max_deaths_by_year_df2, x = ~year, y = ~max_deaths, type = "bar",
+      add_trace(data = current_total_deaths_df, x = ~year, y = ~max_deaths, type = "bar",
                 marker = list(color = "red"),
                 name = "Current Deaths")
     
