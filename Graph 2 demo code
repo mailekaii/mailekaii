@@ -1,0 +1,76 @@
+library(shiny)
+library(dplyr)
+library(plotly)
+
+
+combined_df <- read.csv("Covid_summary.csv")
+
+past_total_cases_df <- combined_df %>%
+  select(date, past_total_cases) %>%
+  filter(!is.na(past_total_cases)) %>%
+  mutate(date = as.Date(date, format = "%m/%d/%Y"),
+         year = format(date, "%Y")) %>%
+  group_by(year) %>%
+  summarise(max_past_cases = max(past_total_cases))
+
+current_total_cases_df <- combined_df %>%
+  select(date, current_total_cases) %>%
+  filter(!is.na(current_total_cases)) %>%
+  mutate(date = as.Date(date, format = "%m/%d/%Y"),
+         year = format(date, "%Y")) %>%
+  group_by(year) %>%
+  summarise(max_current_cases = max(current_total_cases))
+
+years <- sort(unique(c(past_total_cases_df$year, current_total_cases_df$year)))
+
+
+ui <- fluidPage(
+  titlePanel("COVID-19 Total infected"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("caseType", "Select Case Type:",
+                  choices = c("Current Total Cases by years" = "current",
+                              "Past Total Cases by years" = "past")),
+      uiOutput("yearCheckboxes")
+    ),
+    mainPanel(
+      plotlyOutput("casesPlot")
+    )
+  )
+)
+
+
+server <- function(input, output, session) {
+  
+  output$yearCheckboxes <- renderUI({
+    checkboxGroupInput("selectedYears", "Select Years:", 
+                       choices = years, 
+                       selected = years)
+  })
+  
+  output$casesPlot <- renderPlotly({
+    
+    filtered_past_cases <- past_total_cases_df %>% filter(year %in% input$selectedYears)
+    filtered_current_cases <- current_total_cases_df %>% filter(year %in% input$selectedYears)
+    
+    if (input$caseType == "current") {
+      data_to_plot <- filtered_current_cases
+      y <- ~max_current_cases
+      color <- "purple"
+      name <- "Current Cases"
+    } else {
+      data_to_plot <- filtered_past_cases
+      y <- ~max_past_cases
+      color <- "gold"
+      name <- "Past Cases"
+    }
+    
+    plot_ly(data_to_plot, x = ~year, y = y, type = "bar", marker = list(color = color), name = name) %>%
+      layout(title = paste(name, "by Year"),
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Cases"))
+  })
+}
+
+
+shinyApp(ui = ui, server = server)
