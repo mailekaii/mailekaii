@@ -1,6 +1,5 @@
 source.R page 
-server <- function(input, output) {
-  
+server <- function(input, output, session) {
   # Load data and process it
   combined_df <- read.csv("Covid_summary.csv")
   
@@ -28,7 +27,7 @@ server <- function(input, output) {
     group_by(year) %>%
     summarise(max_deaths = max(current_total_death))
   
-  # Render the interactive bar chart
+  # Render the interactive bar chart for total deaths
   output$interactiveBarChart <- renderPlotly({
     interactive_bar_chart <- plot_ly(max_deaths_by_year_df, x = ~year, y = ~max_deaths, type = "bar", 
                                      marker = list(color = "blue"),
@@ -43,5 +42,139 @@ server <- function(input, output) {
                 name = "Current deaths") 
     
     interactive_bar_chart
+  })
+  
+  # Filter and process past total cases
+  past_total_cases_df2 <- combined_df %>% select(date, past_total_cases)
+  past_total_cases_df <- past_total_cases_df2[!is.na(past_total_cases_df2$past_total_cases), ]
+  
+  past_total_cases_df$date <- as.Date(past_total_cases_df$date, format = "%m/%d/%Y")
+  past_total_cases_df <- past_total_cases_df %>% mutate(year = format(date, "%Y"))
+  
+  total_past_cases <- past_total_cases_df %>% group_by(year) %>% summarise(max_past_cases = max(past_total_cases))
+  
+  # Filter and process current total cases
+  current_total_cases_df2 <- combined_df %>% select(date, current_total_cases)
+  current_total_cases_df <- current_total_cases_df2[!is.na(current_total_cases_df2$current_total_cases),]
+  
+  current_total_cases_df$date <- as.Date(current_total_cases_df$date, format = "%m/%d/%Y")
+  current_total_cases_df <- current_total_cases_df %>% mutate(year = format(date, "%Y"))
+  
+  total_current_cases <- current_total_cases_df %>% group_by(year) %>% summarise(max_current_cases = max(current_total_cases))
+  
+  # Render the interactive bar chart for total cases
+  output$totalCasesPlot <- renderPlotly({
+    interactive_bar_chart2 <- plot_ly(total_past_cases, x = ~year, y = ~max_past_cases, type = "bar", 
+                                      marker = list(color = "gold"),
+                                      name = "Past Cases") %>%
+      layout(title = "Most Cases by Year",
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Most Cases"))
+    
+    interactive_bar_chart2 <- interactive_bar_chart2 %>%
+      add_trace(data = total_current_cases, x = ~year, y = ~max_current_cases, type = "bar",
+                marker = list(color = "purple"),
+                name = "Current Cases") 
+    
+    interactive_bar_chart2
+  })
+  
+  # Filter and process past total hospitalizations including ICU
+  past_total_hosp_df2 <- combined_df %>% select(date, past_icu, past_hosp)
+  past_total_hosp_df <- past_total_hosp_df2 %>% filter(!is.na(past_icu), !is.na(past_hosp))
+  
+  past_total_hosp_df$date <- as.Date(past_total_hosp_df$date, format = "%m/%d/%Y")
+  past_total_hosp_df <- past_total_hosp_df %>% mutate(year = format(date, "%Y"))
+  
+  total_past_hosp <- past_total_hosp_df %>% group_by(year) %>% summarise(max_past_hosp = max(past_hosp))
+  total_past_icu <- past_total_hosp_df %>% group_by(year) %>% summarise(max_past_icu = max(past_icu))
+  combined_past_hosp_stats <- full_join(total_past_icu, total_past_hosp, by = "year")
+  
+  # Filter and process current total hospitalizations including ICU
+  current_total_hosp_df2 <- combined_df %>% select(date, current_icu, current_hosp)
+  current_total_hosp_df <- current_total_hosp_df2 %>% filter (!is.na(current_icu), !is.na(current_hosp))
+  
+  current_total_hosp_df$date <- as.Date(current_total_hosp_df$date, format = "%m/%d/%Y")
+  current_total_hosp_df <- current_total_hosp_df %>% mutate(year = format(date, "%Y"))
+  
+  total_current_hosp <- current_total_hosp_df %>% group_by(year) %>% summarise(max_current_hosp = max(current_hosp))
+  total_current_icu <- current_total_hosp_df %>% group_by(year) %>% summarise(max_current_icu = max(current_icu))
+  combined_current_hosp_stats <- full_join(total_current_icu, total_current_hosp, by = "year")
+  
+  combined_hosp_stats <- full_join(combined_past_hosp_stats, combined_current_hosp_stats, by = "year")
+  
+  # Render the interactive bar chart for total hospitalization including ICU
+  output$totalHospICUPlot <- renderPlotly({
+    interactive_bar_chart3 <- plot_ly(combined_hosp_stats, x = ~year) %>%
+      add_trace(y = ~max_past_hosp, type = "bar", name = "Past Hospitalizations", marker = list(color = "blue")) %>%
+      add_trace(y = ~max_current_hosp, type = "bar", name = "Current Hospitalizations", marker = list(color = "black")) %>%
+      add_trace(y = ~max_past_icu, type = "bar", name = "Past ICU Admissions", marker = list(color = "green")) %>%
+      add_trace(y = ~max_current_icu, type = "bar", name = "Current ICU Admissions", marker = list(color = "red")) %>%
+      layout(title = "Total Hospitalization including ICU by Year",
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Most Cases"))
+    
+    interactive_bar_chart3
+  })
+  
+  # Render the interactive bar chart for covid deaths
+  output$covidDeathsPlot <- renderPlotly({
+    combined_df <- read.csv("Covid_summary.csv")
+    
+    # Data manipulation
+    combined_df$date <- as.Date(combined_df$date, format = "%m/%d/%Y")
+    combined_df <- combined_df %>% mutate(year = format(date, "%Y"))
+    combined_df <- combined_df %>%
+      select(year, past_total_deaths, current_total_death) %>%
+      filter(year %in% input$selectedYears)
+    
+    past_total_deaths_df <- combined_df %>% select(year, past_total_deaths) %>%
+      group_by(year) %>% summarise(max_deaths = max(past_total_deaths, na.rm = TRUE))
+    
+    current_total_deaths_df <- combined_df %>% select(year, current_total_death) %>%
+      group_by(year) %>% summarise(max_deaths = max(current_total_death, na.rm = TRUE))
+    
+    # Plot
+    interactive_bar_chart <- plot_ly(past_total_deaths_df, x = ~year, y = ~max_deaths, type = "bar", 
+                                     marker = list(color = "lightblue"),
+                                     name = "Past Deaths") %>%
+      layout(title = "Most Deaths by Selected Years",
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Most Deaths"))
+    interactive_bar_chart <- interactive_bar_chart %>%
+      add_trace(data = current_total_deaths_df, x = ~year, y = ~max_deaths, type = "bar",
+                marker = list(color = "purple"),
+                name = "Current Deaths")
+    
+    return(interactive_bar_chart)
+  })
+  
+  output$yearCheckboxes <- renderUI({
+    checkboxGroupInput("selectedYears", "Select Year:", 
+                       choices = years, 
+                       selected = years)
+  })
+  
+  output$casesPlot <- renderPlotly({
+    
+    filtered_past_cases <- past_total_cases_df %>% filter(year %in% input$selectedYears)
+    filtered_current_cases <- current_total_cases_df %>% filter(year %in% input$selectedYears)
+    
+    if (input$caseType == "current") {
+      data_to_plot <- filtered_current_cases
+      y <- data_to_plot$max_current_cases
+      color <- "lightgreen"
+      name <- "Current Cases"
+    } else {
+      data_to_plot <- filtered_past_cases
+      y <- data_to_plot$max_past_cases
+      color <- "pink"
+      name <- "Past Cases"
+    }
+    
+    plot_ly(data_to_plot, x = ~year, y = y, type = "bar", marker = list(color = color), name = name) %>%
+      layout(title = paste(name, "by Year"),
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Cases"))
   })
 }
