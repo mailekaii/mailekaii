@@ -1,0 +1,98 @@
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+combined_df <- read.csv("Covid_summary.csv")
+
+# We need to add this two functions
+preprocess_data <- function(df) {
+  df$date <- as.Date(df$date, format = "%m/%d/%Y")
+  df <- df %>%
+    mutate(year = format(date, "%Y"))
+  return(df)
+}
+
+prepare_data <- function(df) {
+  past_total_hosp_df <- df %>%
+    select(date, past_icu, past_hosp) %>%
+    filter(!is.na(past_icu), !is.na(past_hosp))
+  current_total_hosp_df <- df %>%
+    select(date, current_icu, current_hosp) %>%
+    filter (!is.na(current_icu), !is.na(current_hosp))
+  
+  past_total_hosp_df <- preprocess_data(past_total_hosp_df)
+  current_total_hosp_df <- preprocess_data(current_total_hosp_df)
+  
+  total_past_hosp <- past_total_hosp_df %>%
+    group_by(year) %>% summarise(max_past_hosp = max(past_hosp))
+  total_current_hosp <- current_total_hosp_df %>%
+    group_by(year) %>% summarise(max_current_hosp = max(current_hosp))
+  total_past_icu <- past_total_hosp_df %>%
+    group_by(year) %>% summarise(max_past_icu = max(past_icu))
+  total_current_icu <- current_total_hosp_df %>%
+    group_by(year) %>% summarise(max_current_icu = max(current_icu))
+  
+  return(list(total_past_hosp = total_past_hosp, total_current_hosp = total_current_hosp,
+              total_past_icu = total_past_icu, total_current_icu = total_current_icu))
+}
+
+data_lists <- prepare_data(combined_df)
+
+# UI
+ui <- fluidPage(
+  titlePanel("COVID-19 Hospitalization"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("dataChoice", "Choose data type:",
+                  choices = c("Past Hospitalizations" = "past_hosp",
+                              "Current Hospitalizations" = "current_hosp",
+                              "Past ICU Admissions" = "past_icu",
+                              "Current ICU Admissions" = "current_icu"))
+    ),
+    mainPanel(
+      plotlyOutput("hospPlot")
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output) {
+  output$hospPlot <- renderPlotly({
+    data_type <- input$dataChoice
+    # Initialize variables
+    data_to_plot <- NULL
+    y_label <- ""
+    bar_color <- "blue" # Default color
+    
+    # Select data and set color based on the choice
+    if (data_type == "past_hosp") {
+      data_to_plot <- data_lists$total_past_hosp
+      y_label <- "max_past_hosp"
+      bar_color <- "blue"
+    } else if (data_type == "current_hosp") {
+      data_to_plot <- data_lists$total_current_hosp
+      y_label <- "max_current_hosp"
+      bar_color <- "red"
+    } else if (data_type == "past_icu") {
+      data_to_plot <- data_lists$total_past_icu
+      y_label <- "max_past_icu"
+      bar_color <- "green"
+    } else if (data_type == "current_icu") {
+      data_to_plot <- data_lists$total_current_icu
+      y_label <- "max_current_icu"
+      bar_color <- "orange"
+    }
+    
+    plot <- plot_ly(data_to_plot, x = ~year, y = as.formula(paste0("~`", y_label, "`")), type = "bar",
+                    marker = list(color = bar_color)) %>%
+      layout(title = "Hospitalizations and ICU Admissions by Year",
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Count"))
+    
+    return(plot)
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
