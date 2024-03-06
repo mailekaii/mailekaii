@@ -4,13 +4,15 @@ current_total_hosp_df = read.csv("current_total_hosp_df.csv")
 
 total_past_hosp = past_total_hosp_df %>%group_by(year) %>% summarise(max_past_hosp = max(past_hosp))
 total_past_icu = past_total_hosp_df %>% group_by(year) %>% summarise(max_past_icu = max(past_icu))
-combined_past_hosp_stats = full_join(total_past_icu, total_past_hosp, by = "year")
+
+
+
 
 total_current_hosp = current_total_hosp_df %>% group_by(year) %>% summarise(max_current_hosp = max(current_hosp))
-total_current_icu = current_total_hosp_df %>% group_by(year) %>% summarise(max_current_icu = max(current_icu))                                                                         
-combined_current_hosp_stats = full_join(total_current_icu, total_current_hosp, by = "year") 
+total_current_icu = current_total_hosp_df %>% group_by(year) %>% summarise(max_current_icu = max(current_icu)) 
 
-combined_hosp_stats = full_join(combined_past_hosp_stats, combined_current_hosp_stats, by = "year")
+
+
 
 interactive_bar_chart3 = plot_ly(total_past_hosp, x = ~year, y = ~max_past_hosp, type = "bar", 
                                  marker = list(color = "blue"),
