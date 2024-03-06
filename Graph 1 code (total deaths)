@@ -1,3 +1,36 @@
+#UPDATED
+brary(dplyr)
+library(stringr)
+library(ggplot2)
+library(plotly)
+current_total_deaths_df = read.csv("current_total_deaths_df.csv")
+past_total_deaths_df = read.csv("past_total_deaths_df.csv")
+
+max_deaths_by_year_df = past_total_deaths_df %>%group_by(year) %>% summarise(max_deaths = max(past_total_deaths))
+max_deaths_by_year_df2 = current_total_deaths_df %>% group_by(year) %>% summarise(max_deaths = max(current_total_death))
+
+
+
+interactive_bar_chart <- plot_ly(max_deaths_by_year_df, x = ~year, y = ~max_deaths, type = "bar", 
+                                 marker = list(color = "blue"),
+                                 name = "Past Deaths") %>%
+  layout(title = "Most Deaths by Year",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Most Deaths"))
+interactive_bar_chart = interactive_bar_chart %>%
+  add_trace(data = max_deaths_by_year_df2, x = ~year, y = ~max_deaths, type = "bar",
+            marker = list(color = "red"),
+            name = "Current deaths") 
+interactive_bar_chart
+
+
+
+
+
+
+
+
+
 #Project graph
 library(dplyr)
 library(stringr)
